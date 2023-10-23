@@ -10,8 +10,20 @@ namespace NeuralNetworkButGood
 {
     internal class NeuralNetworkFast
     {
-        public float Cost = 0;
-        private List<ILayer> Layers = new List<ILayer>();
+        float _cost;
+        public float Cost
+        {
+            get
+            {
+                return _cost;
+            }
+            set
+            {
+                _cost = value;
+            }
+        }
+
+        public List<ILayer> Layers = new List<ILayer>();
         public NeuralNetworkFast()
         {
 
@@ -19,7 +31,16 @@ namespace NeuralNetworkButGood
 
         public Vector<float> Run(Vector<float> InputVector)
         {
-            if(typeof(InputLayer) != Layers[0].GetType())
+            return DoRun(InputVector);
+        }
+        public float[] Run(float[] InputVector)
+        {
+            return DoRun(Vector<float>.Build.DenseOfArray(InputVector)).AsArray();
+        }
+
+        private Vector<float> DoRun(Vector<float> InputVector)
+        {
+            if (typeof(InputLayer) != Layers[0].GetType())
             {
                 throw new Exception("Network does not start with an input layer");
             }
@@ -31,6 +52,7 @@ namespace NeuralNetworkButGood
             {
                 WorkingVector = layer.FeedForward(WorkingVector);
             }
+
             return WorkingVector;
         }
 

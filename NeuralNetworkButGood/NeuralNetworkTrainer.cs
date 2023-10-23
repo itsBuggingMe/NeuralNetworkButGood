@@ -9,13 +9,14 @@ using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.Distributions;
 using System.Drawing;
 using System.ComponentModel;
+using System.Reflection.Metadata.Ecma335;
 
 namespace NeuralNetworkButGood
 {
     internal class NeuralNetworkTrainer
     {
         public static NeuralNetworkFast TrainNetworkGeneticAlgorithm(int epochs, TrainingData data, int numNetworks, Func<NeuralNetworkFast> getInitalNet,
-            float mutationRange = 0.08f, float mutationRate = 0.02f)
+            float mutationRange = 0.08f, float mutationRate = 0.04f)
         {
             NeuralNetworkFast[] nets = new NeuralNetworkFast[numNetworks];
             for(int i = 0; i < numNetworks; i++)
@@ -25,8 +26,11 @@ namespace NeuralNetworkButGood
 
             for(int e = 0; e < epochs; e++)
             {
-                for(int i = 0; i < numNetworks; i++)
+                Console.WriteLine("Starting Epoch " + e);
+
+                for (int i = 0; i < numNetworks; i++)
                 {
+                    nets[i].Cost = 0;
                     var netAnswers = data.RunNetwork(nets[i], out var realAnswers);
                     for(int j = 0; j < netAnswers.Length; j++)
                     {
@@ -34,20 +38,52 @@ namespace NeuralNetworkButGood
                     }
                 }
 
-                Array.Sort(nets, (a,b) => { return (int)(a.Cost - b.Cost); });
+                Array.Sort(nets, (a,b) => {
+                    if(a.Cost > b.Cost)
+                    {
+                        return 1;
+                    }
+                    else if (b.Cost > a.Cost)
+                    {
+                        return -1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                });
 
-                for(int i = 1; i < numNetworks; i++)
+                Console.WriteLine($"Best Cost: {nets[0].Cost}");
+                Console.WriteLine($"Worst Cost: {nets[numNetworks-1].Cost}");
+
+                for (int i = 1; i < numNetworks; i++)
                 {
-                    nets[i] = 
+                    var mutateFrom = nets[0];
+                    var mutatedNetwork = new NeuralNetworkFast();
+
+                    for(int j = 0; j < mutateFrom.Layers.Count; j++)
+                    {
+                        var Layer = mutateFrom.Layers[j].CopyOf();
+                        if(Layer.GetType() == typeof(GenericLayer))
+                            (Layer as GenericLayer).Mutate(mutationRange, mutationRate);
+
+                        mutatedNetwork.AddLayer(Layer);
+                    }
+
+                    nets[i] = mutatedNetwork;
                 }
             }
+
+            return nets[0];
         }
 
         private static float MeanSquaredError(Vector<float> real, Vector<float> cap)
         {
+            /*
             var difference = real - cap;
-            difference.PointwiseMultiply(difference);
-            return difference.Sum();
+            difference.PointwiseAbs();
+            float sum =  difference.Sum();*/
+            return Math.Abs(real[0] - cap[0]);
         }
     }
 
@@ -72,11 +108,12 @@ namespace NeuralNetworkButGood
             var LRealAnswers = new Vector<float>[DataVectors.Count];
             var NetAnswers = new Vector<float>[DataVectors.Count];
 
-            Parallel.For(0, DataVectors.Count, (i) =>
+            for(int i = 0; i < DataVectors.Count; i++)
             {
                 NetAnswers[i] = network.Run(DataVectors[i].Item1);
                 LRealAnswers[i] = DataVectors[i].Item2;
-            });
+            }
+
             RealAnswers = LRealAnswers;
             return NetAnswers;
         }

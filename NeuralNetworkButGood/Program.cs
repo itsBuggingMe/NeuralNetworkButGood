@@ -8,21 +8,47 @@ namespace NeuralNetworkButGood
     {
         static void Main()
         {
+            TrainingData trainingData = new TrainingData();
 
-            var net = new NeuralNetworkFast();
-            net.AddLayer(new InputLayer(2));
+            for(int i = 0; i < 1028; i++)
+            {
+                float x = GetRandomNum();
+                float y = GetRandomNum();
 
-            net.AddLayer(new GenericLayer(net.TopLayer(), 8));
-            net.AddLayer(new GenericLayer(net.TopLayer(), 8));
+                trainingData.AddData(
+                    Vector<float>.Build.DenseOfArray(new float[] { x,y }),
+                    Vector<float>.Build.DenseOfArray(new float[] {
+                        //System.Numerics.Vector2.Distance(new System.Numerics.Vector2(x,y), System.Numerics.Vector2.Zero) < 6f ? 1 : 0 })
+                        x < 0 ? 1 : 0 })
+                    );
+            }
 
-            net.AddLayer(new GenericLayer(net.TopLayer(), 1, GenericLayer.ActivationFunctions.Sigmoid));
+            Console.WriteLine("DataGenerated");
+
+            var trainedNet = NeuralNetworkTrainer.TrainNetworkGeneticAlgorithm(100, trainingData,128, () =>
+            {
+                var net = new NeuralNetworkFast();
+                net.AddLayer(new InputLayer(2));
+
+                net.AddLayer(new GenericLayer(net.TopLayer(), 4, GenericLayer.ActivationFunctions.Sigmoid));
+
+                net.AddLayer(new GenericLayer(net.TopLayer(), 1, GenericLayer.ActivationFunctions.Sigmoid));
+                return net;
+            });
 
             GenerateImage((v) =>
             {
-                return net.Run(Vector<float>.Build.DenseOfArray(new float[] { v.Item1, v.Item2 }))[0];
-            }, @"C:\Users\Jason\Downloads\netOutput.png", 256, 1/8);
+                return trainedNet.Run(Vector<float>.Build.DenseOfArray(new float[] { v.Item1, v.Item2 }))[0];
+            }, @"G:\My Drive\APCSA\C#\netOutput.png", 256, 1/16f);
 
-            
+
+            while (true)
+            {
+                int a = Convert.ToInt32(Console.ReadLine());
+                int b = Convert.ToInt32(Console.ReadLine());
+                float[] output = trainedNet.Run(new float[] { a, b });
+                Console.WriteLine(output[0]);
+            }
             /*
             var net = new NeuralNetwork();
             net.AddLayer(2);
@@ -65,6 +91,7 @@ namespace NeuralNetworkButGood
         {
             Bitmap bitmap = new Bitmap(imageSize, imageSize);
             float halfImageSize = imageSize * 0.5f;
+
             for (int x = 0; x < imageSize; x++)
             {
                 for (int y = 0; y < imageSize; y++)
@@ -80,6 +107,11 @@ namespace NeuralNetworkButGood
             }
 
             bitmap.Save(output);
+        }
+
+        public static float GetRandomNum()
+        {
+            return (float)(Random.Shared.NextDouble() - 0.5f) * 2;
         }
     }
 }
