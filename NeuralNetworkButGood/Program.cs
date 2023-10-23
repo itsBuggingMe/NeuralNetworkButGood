@@ -21,6 +21,8 @@ namespace NeuralNetworkButGood
             {
                 return net.Run(Vector<float>.Build.DenseOfArray(new float[] { v.Item1, v.Item2 }))[0];
             }, @"C:\Users\Jason\Downloads\netOutput.png", 256, 1/8);
+
+            
             /*
             var net = new NeuralNetwork();
             net.AddLayer(2);

@@ -11,6 +11,7 @@ namespace NeuralNetworkButGood
     {
         public int LayerSize { get; }
         public abstract Vector<float> FeedForward(Vector<float> WorkingVector);
+        public ILayer CopyOf();
     }
 
     internal class GenericLayer : ILayer
@@ -39,6 +40,11 @@ namespace NeuralNetworkButGood
             WorkingVector = Weights * WorkingVector + Biases;
             WorkingVector.MapInplace(ActivationFunction);
             return WorkingVector;
+        }
+
+        public GenericLayer CopyOf()
+        {
+            return new GenericLayer(_layerSize);
         }
 
         internal static class ActivationFunctions
@@ -74,6 +80,11 @@ namespace NeuralNetworkButGood
         public Vector<float> FeedForward(Vector<float> WorkingVector)
         {
             return WorkingVector;
+        }
+
+        public InputLayer CopyOf()
+        {
+            return new InputLayer(_layerSize);
         }
     }
 }

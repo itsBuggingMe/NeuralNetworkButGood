@@ -36,7 +36,10 @@ namespace NeuralNetworkButGood
 
                 Array.Sort(nets, (a,b) => { return (int)(a.Cost - b.Cost); });
 
-
+                for(int i = 1; i < numNetworks; i++)
+                {
+                    nets[i] = 
+                }
             }
         }
 
