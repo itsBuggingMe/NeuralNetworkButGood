@@ -24,7 +24,8 @@ namespace NeuralNetworkButGood
             net.AddLayer(new GenericLayer(net.TopLayer(), 64));
             net.AddLayer(new GenericLayer(net.TopLayer(), 64));
             net.AddLayer(new GenericLayer(net.TopLayer(), 64));
-            const int Tests = (int)(10e4);
+            net.AddLayer(new GenericLayer(net.TopLayer(), 1));
+            const int Tests = (int)(10e3);
             var inputVector = NetworkUtils.TensorFromVector(new float[] {0.05f,0.95f });
 
             DateTime a = DateTime.Now;
@@ -34,44 +35,6 @@ namespace NeuralNetworkButGood
             }
             TimeSpan b = DateTime.Now - a; 
             Console.WriteLine($"Total Time: {b.TotalMilliseconds}");
-        }
-
-        public static void GenerateImage(Func<(float, float), float> Network, string output, int imageSize, float scaleFactor)
-        {
-            Bitmap bitmap = new Bitmap(imageSize, imageSize);
-            float halfImageSize = imageSize * 0.5f;
-
-            for (int x = 0; x < imageSize; x++)
-            {
-                for (int y = 0; y < imageSize; y++)
-                {
-                    float netOutput = Network(
-                        ((x - halfImageSize) * scaleFactor, (y - halfImageSize) * scaleFactor)
-                        );
-
-                    byte val = (byte)(netOutput * 255f);
-
-                    bitmap.SetPixel(x, y, Color.FromArgb(val, val, val));
-                }
-            }
-
-            bitmap.Save(output);
-        }
-
-        public static float GetRandomNum()
-        {
-            return (float)(Random.Shared.NextDouble() - 0.5f) * 2;
-        }
-
-        public static void ForEachPixelInBitmap(Bitmap bitmap, Action<int, int> ForEach)
-        {
-            for (int x = 0; x < bitmap.Width; x++)
-            {
-                for (int y = 0; y < bitmap.Height; y++)
-                {
-                    ForEach(x,y);
-                }
-            }
         }
     }
 }
