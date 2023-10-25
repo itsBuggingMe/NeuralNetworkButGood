@@ -10,108 +10,49 @@ using MathNet.Numerics.Distributions;
 using System.Drawing;
 using System.ComponentModel;
 using System.Reflection.Metadata.Ecma335;
+using Tensornet;
 
 namespace NeuralNetworkButGood
 {
     internal class NeuralNetworkTrainer
     {
-        public static NeuralNetworkFast TrainNetworkGeneticAlgorithm(int epochs, TrainingData data, int numNetworks, Func<NeuralNetworkFast> getInitalNet,
-            float mutationRange = 0.08f, float mutationRate = 0.04f)
-        {
-            NeuralNetworkFast[] nets = new NeuralNetworkFast[numNetworks];
-            for(int i = 0; i < numNetworks; i++)
-            {
-                nets[i] = getInitalNet();
-            }
 
-            for(int e = 0; e < epochs; e++)
-            {
-                Console.WriteLine("Starting Epoch " + e);
-
-                for (int i = 0; i < numNetworks; i++)
-                {
-                    nets[i].Cost = 0;
-                    var netAnswers = data.RunNetwork(nets[i], out var realAnswers);
-                    for(int j = 0; j < netAnswers.Length; j++)
-                    {
-                        nets[i].Cost += MeanSquaredError(realAnswers[j], netAnswers[j]);
-                    }
-                }
-
-                Array.Sort(nets, (a,b) => {
-                    if(a.Cost > b.Cost)
-                    {
-                        return 1;
-                    }
-                    else if (b.Cost > a.Cost)
-                    {
-                        return -1;
-                    }
-                    else
-                    {
-                        return 0;
-                    }
-                });
-
-                Console.WriteLine($"Best Cost: {nets[0].Cost}");
-                Console.WriteLine($"Worst Cost: {nets[numNetworks-1].Cost}");
-
-                for (int i = 1; i < numNetworks; i++)
-                {
-                    var mutateFrom = nets[0];
-                    var mutatedNetwork = new NeuralNetworkFast();
-
-                    for(int j = 0; j < mutateFrom.Layers.Count; j++)
-                    {
-                        var Layer = mutateFrom.Layers[j].CopyOf();
-                        if(Layer.GetType() == typeof(GenericLayer))
-                            (Layer as GenericLayer).Mutate(mutationRange, mutationRate);
-
-                        mutatedNetwork.AddLayer(Layer);
-                    }
-
-                    nets[i] = mutatedNetwork;
-                }
-            }
-
-            return nets[0];
-        }
-
-        private static float MeanSquaredError(Vector<float> real, Vector<float> cap)
-        {
-            /*
-            var difference = real - cap;
-            difference.PointwiseAbs();
-            float sum =  difference.Sum();*/
-            return Math.Abs(real[0] - cap[0]);
-        }
     }
 
 
     internal class TrainingData
     {
         //input, output
-        public List<(Vector<float>, Vector<float>)> DataVectors { get; set; } = new List<(Vector<float>, Vector<float>)>();
+        private List<(Tensor<float>, Tensor<float>)> DataVectors { get; set; } = new List<(Tensor<float>, Tensor<float>)>();
 
-        public TrainingData()
+        private readonly int numPerDisplay;
+        public int NumPerEpoch => numPerDisplay;
+
+        public TrainingData(int numPerDisplay)
         {
-
+            this.numPerDisplay = numPerDisplay;
         }
 
-        public void AddData(Vector<float> input, Vector<float> output)
+        public void AddData(Tensor<float> input, Tensor<float> output)
         {
             DataVectors.Add((input,output));
         }
-
-        public Vector<float>[] RunNetwork(NeuralNetworkFast network, out Vector<float>[] RealAnswers)
+        public void AddData(float[] input, float[] output)
         {
-            var LRealAnswers = new Vector<float>[DataVectors.Count];
-            var NetAnswers = new Vector<float>[DataVectors.Count];
+            DataVectors.Add(  (NetworkUtils.TensorFromVector(input), NetworkUtils.TensorFromVector(output))  );
+        }
+        public Tensor<float>[] RunNetwork(NeuralNetworkFast network, out Tensor<float>[] RealAnswers, int showing = 0)
+        {
+            var LRealAnswers = new Tensor<float>[numPerDisplay];
+            var NetAnswers = new Tensor<float>[numPerDisplay];
 
-            for(int i = 0; i < DataVectors.Count; i++)
+            int transform = showing * numPerDisplay;
+
+            for (int i = 0; i < numPerDisplay; i++)
             {
-                NetAnswers[i] = network.Run(DataVectors[i].Item1);
-                LRealAnswers[i] = DataVectors[i].Item2;
+                int transIndex = (transform + i) % DataVectors.Count;
+                NetAnswers[i] = network.Run(DataVectors[transIndex].Item1);
+                LRealAnswers[i] = DataVectors[transIndex].Item2;
             }
 
             RealAnswers = LRealAnswers;

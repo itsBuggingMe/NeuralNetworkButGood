@@ -5,13 +5,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tensornet;
 
 namespace NeuralNetworkButGood
 {
     internal interface ILayer
     {
         public int LayerSize { get; }
-        public abstract Vector<float> FeedForward(Vector<float> WorkingVector);
+        public abstract Tensor<float> FeedForward(Tensor<float> WorkingVector);
         public ILayer CopyOf();
     }
 
@@ -22,15 +23,15 @@ namespace NeuralNetworkButGood
 
         private readonly int _prevLayerSize;
 
-        private Matrix<float> Weights;
-        private Vector<float> Biases;
+        public Tensor<float> Weights;
+        public Tensor<float> Biases;
 
         private Func<float, float> ActivationFunction;
 
         public GenericLayer(ILayer previousLayer, int layerSize, Func<float, float>? Activation = null)
         {
-            this.Weights = Matrix<float>.Build.Random(layerSize, previousLayer.LayerSize);
-            this.Biases = Vector<float>.Build.Random(layerSize);
+            this.Weights = Tensor.Random.Uniform<float>(new TensorShape(layerSize, previousLayer.LayerSize));
+            this.Biases = Tensor.Random.Uniform<float>(new TensorShape(layerSize));
 
             this.ActivationFunction = Activation ?? ActivationFunctions.Relu;
 
@@ -40,8 +41,8 @@ namespace NeuralNetworkButGood
 
         private GenericLayer(int prevLayerSize, int layerSize, Func<float, float>? Activation = null)
         {
-            this.Weights = Matrix<float>.Build.Random(layerSize, prevLayerSize);
-            this.Biases = Vector<float>.Build.Random(layerSize);
+            this.Weights = Tensor.Random.Uniform<float>(new TensorShape(prevLayerSize, layerSize));
+            this.Biases = Tensor.Random.Uniform<float>(new TensorShape(layerSize));
 
             this.ActivationFunction = Activation ?? ActivationFunctions.Relu;
 
@@ -49,10 +50,10 @@ namespace NeuralNetworkButGood
             _layerSize = layerSize;
         }
 
-        public Vector<float> FeedForward(Vector<float> WorkingVector)
+        public Tensor<float> FeedForward(Tensor<float> WorkingVector)
         {
-            WorkingVector = Weights * WorkingVector + Biases;
-            WorkingVector.MapInplace(ActivationFunction);
+            WorkingVector = (WorkingVector * Weights).Sum(1) + Biases;
+            WorkingVector.ForEachInplace(ActivationFunction);
             return WorkingVector;
         }
 
@@ -66,12 +67,12 @@ namespace NeuralNetworkButGood
 
         public void Mutate(float range, float prob)
         {
-            Weights.MapInplace((v) =>
+            Weights.ForEachInplace((v) =>
             {
                 return GetOneRange(range, prob) + v;
             });
 
-            Biases.MapInplace((v) =>
+            Biases.ForEachInplace((v) =>
             {
                 return GetOneRange(range, prob) + v;
             });
@@ -88,9 +89,9 @@ namespace NeuralNetworkButGood
 
         internal static class ActivationFunctions
         {
-            public static float Atan(float value)
+            public static float Tanh(float value)
             {
-                return MathF.Atan(value);
+                return MathF.Tanh(value);
             }
 
             public static float Relu(float value)
@@ -115,7 +116,7 @@ namespace NeuralNetworkButGood
             _layerSize = layerSize;
         }
 
-        public Vector<float> FeedForward(Vector<float> WorkingVector)
+        public Tensor<float> FeedForward(Tensor<float> WorkingVector)
         {
             return WorkingVector;
         }

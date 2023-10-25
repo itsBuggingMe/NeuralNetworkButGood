@@ -1,4 +1,4 @@
-﻿using MathNet.Numerics.LinearAlgebra;
+﻿using Tensornet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,25 +29,24 @@ namespace NeuralNetworkButGood
 
         }
 
-        public Vector<float> Run(Vector<float> InputVector)
+        public Tensor<float> Run(Tensor<float> InputVector)
         {
             return DoRun(InputVector);
         }
         public float[] Run(float[] InputVector)
         {
-            return DoRun(Vector<float>.Build.DenseOfArray(InputVector)).AsArray();
+            var input = Tensor.FromArray(InputVector, new int[] { InputVector.Length });
+            return DoRun(input).ToArray();
         }
 
-        private Vector<float> DoRun(Vector<float> InputVector)
+        private Tensor<float> DoRun(Tensor<float> InputVector)
         {
             if (typeof(InputLayer) != Layers[0].GetType())
             {
                 throw new Exception("Network does not start with an input layer");
             }
 
-            Vector<float> WorkingVector = Vector<float>.Build.SameAs(InputVector);
-            InputVector.CopyTo(WorkingVector);
-
+            Tensor<float> WorkingVector = Tensor.FromEnumerable(InputVector, InputVector.Shape.ToArray());
             foreach (ILayer layer in Layers)
             {
                 WorkingVector = layer.FeedForward(WorkingVector);
