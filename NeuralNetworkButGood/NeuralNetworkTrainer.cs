@@ -16,7 +16,10 @@ namespace NeuralNetworkButGood
 {
     internal class NeuralNetworkTrainer
     {
-
+        public static float MeanSquaredError(Tensor<float> network, Tensor<float> training)
+        {
+            throw new NotImplementedException();
+        }
     }
 
 
@@ -57,6 +60,11 @@ namespace NeuralNetworkButGood
 
             RealAnswers = LRealAnswers;
             return NetAnswers;
+        }
+
+        public (Tensor<float>, Tensor<float>)[] GetDataInstance()
+        {
+            throw new NotImplementedException();
         }
     }
 }

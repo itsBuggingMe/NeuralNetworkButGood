@@ -45,11 +45,18 @@ namespace NeuralNetworkButGood
             });
         }
 
-        public void GenerateImageFromNetwork(int pointsToSample, string filePath, Func<float, float> graph, float domain = 4)
+        public void GenerateImageFromFunction(int pointsToSample, string filePath, Func<float, float> graph, float domainMin = -2, float domainMax = 2)
         {
-            float maxDomain = domain * 0.5f;
-            float minDomain = -maxDomain;
+            float stepSize = (Math.Abs(domainMin) + Math.Abs(domainMax)) / pointsToSample;
+            (float,float)[] Data = new (float,float)[pointsToSample];
 
+            for(int i = 0; i < pointsToSample; i++)
+            {
+                float x = i * stepSize;
+                Data[i] = (x,graph(x));
+            }
+
+            GenerateImage(Data, filePath);
         }
 
         public void GenerateImage((float,float)[] DataPairs, string filePath)
@@ -118,6 +125,53 @@ namespace NeuralNetworkButGood
                     onForEach(x,y);
                 }  
             }   
+        }
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal class NeuralNetworkVisualiser
+    {
+        private int sample;
+        private float range;
+        private int layer;
+        Point Location {get;set;}
+        private string outputPath;
+        private GraphRenderer graphRenderer;
+
+        public NeuralNetworkVisualiser(int sample, float range, Point Location, int layer, string outputPath)
+        {
+            this.layer = layer;
+            this.sample = sample;
+            this.range = range;
+            this.Location = Location;
+            this.outputPath = outputPath;
+            this.graphRenderer = new GraphRenderer(new Point(256, 256), Color.Gray, Color.Blue, Color.Yellow);
+        }
+
+        public void SampleWeight(NeuralNetworkFast neuralNetwork, TrainingData data, int pointsToSample = 16)
+        {
+            ILayer activeLayer = neuralNetwork.Layers[layer];
+
+            (Tensor<float>, Tensor<float>)[] TrainingDataRaw = data.GetDataInstance();
+
+            graphRenderer.GenerateImageFromFunction(pointsToSample, GeneratePath(), 
+            (newWeightValue) =>
+            {
+                float cost = 0;
+                foreach(var tuple in TrainingDataRaw)
+                {
+                    cost += NeuralNetworkTrainer.MeanSquaredError(
+                        neuralNetwork.Run(tuple.Item1), 
+                        tuple.Item2
+                        );
+                }
+                return cost / TrainingDataRaw.Length;
+            });
+        }
+
+        private string GeneratePath()
+        {
+            return $"Layter-{layer}Row-{Location.X}Col-{Location.Y}.png";
         }
     }
 }
