@@ -1,40 +1,78 @@
 ﻿using System.IO;
 using System.Drawing;
-using MathNet.Numerics.LinearAlgebra;
 using Tensornet;
+using System;
+using System.Windows;
 
 namespace NeuralNetworkButGood
 {
     internal class Program
     {
+        [STAThread]
         static void Main()
         {
-            TrainingData trainingData = new TrainingData(50);
-
-            Tensor<float> test = Tensor.FromArray(new float[] { 1,2,3,4,5,6 }, new TensorShape(6));
-            Tensor<float> test2 = Tensor.FromArray(new float[] { 1,2,3,4,5,6,8,9,7,10,11,12 }, new TensorShape(2,6));
-
-            var mult = test * test2;
-
-            //string[] filePaths = Directory.GetFiles(@"G:\Shared drives\TRAINNING DATA\compressed 32x32");
+            string[] paths = Directory.GetFiles(@"G:\Shared drives\TRAINNING DATA\compressed 32x32");
             
-            NeuralNetworkFast net = new NeuralNetworkFast();
-            net.AddLayer(new InputLayer(2));
-            net.AddLayer(new GenericLayer(net.TopLayer(), 64));
-            net.AddLayer(new GenericLayer(net.TopLayer(), 64));
-            net.AddLayer(new GenericLayer(net.TopLayer(), 64));
-            net.AddLayer(new GenericLayer(net.TopLayer(), 64));
-            net.AddLayer(new GenericLayer(net.TopLayer(), 1));
-            const int Tests = (int)(10e3);
-            var inputVector = NetworkUtils.TensorFromVector(new float[] {0.05f,0.95f });
+            TrainingData data = NetworkUtils.ImageToTrainingDataBW(paths,
+                (path) => {
+                    float[] ans = new float[10];
+                    ans[path[49] - '0'] = 1;
+                    return ans;
+                }, 
+                paths.Length
+                );
 
-            DateTime a = DateTime.Now;
-            for(int i = 0; i < Tests; i++)
+            Console.WriteLine("Images Loaded");
+
+            NeuralNetworkFast net = new NeuralNetworkFast();
+            
+            Console.WriteLine("Activation");
+            string result = Console.ReadLine();
+
+            Func<float,float> actFunc = null;
+            switch(result)
             {
-                net.Run(inputVector);
+                case"RELU":
+                    actFunc = ActivationFunctions.Relu;
+                    break;
+                case "SIGMOID":
+                    actFunc = ActivationFunctions.Sigmoid;
+                    break;
+                case "TANH":
+                    actFunc = ActivationFunctions.Tanh;
+                    break;
+                default:
+                    throw new Exception();
             }
-            TimeSpan b = DateTime.Now - a; 
-            Console.WriteLine($"Total Time: {b.TotalMilliseconds}");
+
+            net.AddLayer(new InputLayer(32*32));
+            net.AddLayer(new GenericLayer(net.TopLayer(), 16, actFunc));
+            net.AddLayer(new GenericLayer(net.TopLayer(), 16, actFunc));
+            net.AddLayer(new SoftMax(net.TopLayer(), 10));
+
+            string output = @"C:\Users\Jason\OneDrive\Desktop\AI storage Folder\NewNetWeights32x32\";
+            NeuralNetworkVisualiser vis = new NeuralNetworkVisualiser(new Point(0,0), Ask("Layer"), output, Ask("Range"));
+
+            
+            Console.WriteLine("Begin Sample");
+            for(int j = 0; j < 16; j++)//now
+            {
+                for (int i = 0; i < 16; i++)//prev
+                {
+                    vis.Location = new Point(j, i);
+                    vis.SampleWeight(net, data);
+                }
+            }
+
+
+            Console.WriteLine("Done");
+            Console.ReadLine();
+        }
+
+        public static int Ask(string msg)
+        {
+            Console.WriteLine(msg);
+            return int.Parse(Console.ReadLine());
         }
     }
 }

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NeuralNetworkButGood
 {
-    internal class NeuralNetworkFast
+    public class NeuralNetworkFast
     {
         float _cost;
         public float Cost

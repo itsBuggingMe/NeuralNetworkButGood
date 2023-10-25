@@ -3,10 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MathNet.Numerics;
-using MathNet;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.Distributions;
 using System.Drawing;
 using System.ComponentModel;
 using System.Reflection.Metadata.Ecma335;
@@ -14,16 +10,16 @@ using Tensornet;
 
 namespace NeuralNetworkButGood
 {
-    internal class NeuralNetworkTrainer
+    public class NeuralNetworkTrainer
     {
         public static float MeanSquaredError(Tensor<float> network, Tensor<float> training)
         {
-            throw new NotImplementedException();
+            return (network - training).ForEach((f) => { return f * f; }).Sum()[0];
         }
     }
 
 
-    internal class TrainingData
+    public class TrainingData
     {
         //input, output
         private List<(Tensor<float>, Tensor<float>)> DataVectors { get; set; } = new List<(Tensor<float>, Tensor<float>)>();
@@ -64,7 +60,7 @@ namespace NeuralNetworkButGood
 
         public (Tensor<float>, Tensor<float>)[] GetDataInstance()
         {
-            throw new NotImplementedException();
+            return DataVectors.ToArray();
         }
     }
 }
