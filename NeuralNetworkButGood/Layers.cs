@@ -129,9 +129,15 @@ namespace NeuralNetworkButGood
 
         public Tensor<float> FeedForward(Tensor<float> WorkingVector)
         {
-            WorkingVector = ((WorkingVector * Weights).Sum(1) + Biases).ForEach(ActivationFunctions.Sigmoid);
+            WorkingVector = ((WorkingVector * Weights).Sum(1) + Biases);
 
             float sum = WorkingVector.Sum()[0];
+
+            if(sum < 0)
+            {
+                throw new ArgumentException("Working Vector has a negative attitude");
+            }
+
             float inverseSum = 1f / sum;
             return WorkingVector * inverseSum;
         }

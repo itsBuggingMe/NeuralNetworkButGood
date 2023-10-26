@@ -25,20 +25,21 @@ namespace NeuralNetworkButGood
             this.graphRenderer = new GraphRenderer(new Point(256, 256), Color.Gray, Color.DarkCyan, Color.LightCyan);
         }
 
-        public void SampleWeight(NeuralNetworkFast neuralNetwork, TrainingData data, int pointsToSample = 128)
+        public void SampleWeight(NeuralNetworkFast neuralNetwork, TrainingData data,string append, int pointsToSample = 128)
         {
             ILayer activeLayer = neuralNetwork.Layers[layer];
 
             (Tensor<float>, Tensor<float>)[] TrainingDataRaw = data.GetDataInstance();
 
-            graphRenderer.GenerateImageFromFunction(pointsToSample, GeneratePath(),
+            graphRenderer.GenerateImageFromFunction(pointsToSample, GeneratePath(append),
             (newWeightValue) =>
             {
-                GenericLayer layer = (GenericLayer)neuralNetwork.Layers[this.layer];
+                SoftMax layer = (SoftMax)neuralNetwork.Layers[this.layer];
 
                 layer.Weights[Location.X, Location.Y] = newWeightValue;
 
                 float cost = 0;
+                
                 foreach (var tuple in TrainingDataRaw)
                 {
                     float dC = NeuralNetworkTrainer.MeanSquaredError(
@@ -47,13 +48,15 @@ namespace NeuralNetworkButGood
                         );
                     cost += dC;
                 }
-                return cost / TrainingDataRaw.Length;
+
+                return (float)(cost / TrainingDataRaw.Length);
             }, -range * 0.5f, range * 0.5f);
         }
 
-        private string GeneratePath()
+        private string GeneratePath(string append)
         {
-            return $"{outputPath}Layer{layer} Row{Location.X} Col{Location.Y}.png";
+            return $"{outputPath}Layer{layer} Row{Location.X} Col{Location.Y}{append}.png";
         }
+
     }
 }

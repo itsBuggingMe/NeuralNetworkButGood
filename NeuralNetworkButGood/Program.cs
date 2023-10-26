@@ -11,6 +11,16 @@ namespace NeuralNetworkButGood
         [STAThread]
         static void Main()
         {
+            //TODO:
+            //Write IBiasLayer
+            //Write IWeightLayer
+            //Convolutional
+            //Unit testing as Util
+            //RELU & Leaky RELU
+            //Gradient, Schotacisc GD, Adagrad? grav?
+            //GAN image gen?
+            //mage
+
             string[] paths = Directory.GetFiles(@"G:\Shared drives\TRAINNING DATA\compressed 32x32");
             
             TrainingData data = NetworkUtils.ImageToTrainingDataBW(paths,
@@ -25,42 +35,30 @@ namespace NeuralNetworkButGood
             Console.WriteLine("Images Loaded");
 
             NeuralNetworkFast net = new NeuralNetworkFast();
-            
-            Console.WriteLine("Activation");
-            string result = Console.ReadLine();
 
-            Func<float,float> actFunc = null;
-            switch(result)
-            {
-                case"RELU":
-                    actFunc = ActivationFunctions.Relu;
-                    break;
-                case "SIGMOID":
-                    actFunc = ActivationFunctions.Sigmoid;
-                    break;
-                case "TANH":
-                    actFunc = ActivationFunctions.Tanh;
-                    break;
-                default:
-                    throw new Exception();
-            }
 
             net.AddLayer(new InputLayer(32*32));
-            net.AddLayer(new GenericLayer(net.TopLayer(), 16, actFunc));
-            net.AddLayer(new GenericLayer(net.TopLayer(), 16, actFunc));
+            net.AddLayer(new GenericLayer(net.TopLayer(), 16, ActivationFunctions.Sigmoid));
+            net.AddLayer(new GenericLayer(net.TopLayer(), 16, ActivationFunctions.Sigmoid));
             net.AddLayer(new SoftMax(net.TopLayer(), 10));
 
             string output = @"C:\Users\Jason\OneDrive\Desktop\AI storage Folder\NewNetWeights32x32\";
-            NeuralNetworkVisualiser vis = new NeuralNetworkVisualiser(new Point(0,0), Ask("Layer"), output, Ask("Range"));
+            NeuralNetworkVisualiser vis = new NeuralNetworkVisualiser(new Point(8,8), 3, output, 16);
 
             
             Console.WriteLine("Begin Sample");
-            for(int j = 0; j < 16; j++)//now
+
+            SoftMax layer = (SoftMax)net.Layers[3];
+
+
+            for (int j = 0; j < 24; j++)//now
             {
+                layer.Weights[8, 9] = (j - 12f) / 1.5f;
+
+                vis.SampleWeight(net, data, " " + j);
+
                 for (int i = 0; i < 16; i++)//prev
                 {
-                    vis.Location = new Point(j, i);
-                    vis.SampleWeight(net, data);
                 }
             }
 
