@@ -99,5 +99,38 @@ namespace NeuralNetworkButGood
                 collection[i] = b;
             }
         }
+
+        public static TimeSpan BenchmarkNetwork(INeuralNetwork network, TensorShape inputSize, in int runCount, in int rndSeed = 12345)
+        {
+            Random inputGenerator = new Random(rndSeed);
+
+            Tensor InputTensor = Tensor.Zeros<float>(inputSize);
+            InputTensor.ForEachInplace((f)=>
+            {
+                return (float)(inputGenerator.NextDouble() * 2 - 1);
+            });
+
+            //start
+            DataTime a = DataTime.Now;
+            for(int i = 0; i < runCount; i++)
+            {
+                network.FeedForward(InputTensor);
+            }
+            DataTime b = DataTime.Now;
+
+            return b - a;
+        }
+
+        public static TimeSpan GenericBenchmark<I,R>(Func<I,R> GenericBenchmark, I input, in int runCount)
+        {
+            DataTime a = DataTime.Now;
+            for(int i = 0; i < runCount; i++)
+            {
+                _ = GenericBenchmark(input);
+            }
+            DataTime b = DataTime.Now;
+
+            return b - a;
+        }
     }
 }

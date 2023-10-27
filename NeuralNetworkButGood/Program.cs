@@ -12,11 +12,9 @@ namespace NeuralNetworkButGood
         {
             //TODO:
             //Convolutional
-            //Unit testing as Util
             //RELU & Leaky RELU
             //Gradient, Schotacisc GD, Adagrad? grav?
             //GAN image gen?
-            //mage
 
             string[] paths = Directory.GetFiles(@"G:\Shared drives\TRAINNING DATA\compressed 32x32");
             

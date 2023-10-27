@@ -136,6 +136,13 @@ namespace NeuralNetworkButGood
         {
             return 1f / (1f + MathF.Exp(-value));
         }
+
+        
+        public static float LeakyRelu(float value)
+        {
+            const float LeakValue = 0.01f;
+            return value > 0 ? value : value * LeakValue;
+        }
     }
 
 }
