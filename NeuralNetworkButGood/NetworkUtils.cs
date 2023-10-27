@@ -79,10 +79,7 @@ namespace NeuralNetworkButGood
             for (int i = collection.Length - 1; i >= 0; i--)
             {
                 int swapIndex = ShuffleRandom.Next(i);
-                var b = collection[swapIndex];
-
-                collection[swapIndex] = collection[i];
-                collection[i] = b;
+                (collection[i], collection[swapIndex]) = (collection[swapIndex], collection[i]);
             }
         }
 
@@ -93,10 +90,7 @@ namespace NeuralNetworkButGood
             for (int i = collection.Count - 1; i >= 0; i--)
             {
                 int swapIndex = ShuffleRandom.Next(i);
-                var b = collection[swapIndex];
-
-                collection[swapIndex] = collection[i];
-                collection[i] = b;
+                (collection[i], collection[swapIndex]) = (collection[swapIndex], collection[i]);
             }
         }
 
@@ -104,31 +98,43 @@ namespace NeuralNetworkButGood
         {
             Random inputGenerator = new Random(rndSeed);
 
-            Tensor InputTensor = Tensor.Zeros<float>(inputSize);
+            Tensor<float> InputTensor = Tensor.Zeros<float>(inputSize);
             InputTensor.ForEachInplace((f)=>
             {
                 return (float)(inputGenerator.NextDouble() * 2 - 1);
             });
 
             //start
-            DataTime a = DataTime.Now;
+            DateTime a = DateTime.Now;
             for(int i = 0; i < runCount; i++)
             {
-                network.FeedForward(InputTensor);
+                network.Run(InputTensor);
             }
-            DataTime b = DataTime.Now;
+            DateTime b = DateTime.Now;
 
             return b - a;
         }
 
+        public static TimeSpan[] MultiBenchmarkNetwork(INeuralNetwork network, TensorShape inputSize,in int banchMarkCount, in int runCount, in int rndSeed = 12345)
+        {
+            TimeSpan[] timeSpans = new TimeSpan[banchMarkCount];
+
+            for(int i = 0; i < banchMarkCount; i++)
+            {
+                timeSpans[i] = BenchmarkNetwork(network, inputSize, runCount, rndSeed);
+            }
+
+            return timeSpans;
+        }
+
         public static TimeSpan GenericBenchmark<I,R>(Func<I,R> GenericBenchmark, I input, in int runCount)
         {
-            DataTime a = DataTime.Now;
+            DateTime a = DateTime.Now;
             for(int i = 0; i < runCount; i++)
             {
                 _ = GenericBenchmark(input);
             }
-            DataTime b = DataTime.Now;
+            DateTime b = DateTime.Now;
 
             return b - a;
         }

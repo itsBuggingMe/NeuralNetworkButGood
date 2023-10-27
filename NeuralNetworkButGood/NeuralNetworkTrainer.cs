@@ -36,11 +36,11 @@ namespace NeuralNetworkButGood
                 for (int LayerIndex = Weights.Length; LayerIndex > 0; LayerIndex--)
                 {// do back prop
                     Tensor<float> diffVector = trainingData.Item2 - NetworkOutput;
-
+                    /*
                     for(int NeuronDifferenceIndex = 0; NeuronDifferenceIndex < diffVector.)
                     {
 
-                    }
+                    }*/
                 }
                 //apply gradients
 
