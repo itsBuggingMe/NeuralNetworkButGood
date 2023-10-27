@@ -122,22 +122,26 @@ namespace NeuralNetworkButGood
 
     public static class Activations
     {
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Tanh(float value)
         {
             return MathF.Tanh(value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Relu(float value)
         {
             return Math.Max(value, 0);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Sigmoid(float value)
         {
             return 1f / (1f + MathF.Exp(-value));
         }
 
-        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float LeakyRelu(float value)
         {
             const float LeakValue = 0.01f;
