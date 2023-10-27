@@ -34,10 +34,11 @@ namespace NeuralNetworkButGood
             return Tensor.FromArray(vector, new int[] { vector.Length });
         }
 
-        public static TrainingData ImageToTrainingDataBW(string[] filePaths, Func<string, float[]> GetOutputFromPath, int numPerDisplay)
+        public static TrainingData ImageToTrainingDataBW(string[] filePaths, Func<string, float[]> GetOutputFromPath, int batchSize)
         {
-            TrainingData allData = new TrainingData(numPerDisplay);
+            (float[], float[])[] dataRaw = new (float[], float[])[filePaths.Length];
 
+            int thingsAdded = 0;
             foreach(string path in filePaths)
             {
                 Bitmap bmp = new Bitmap(path);
@@ -50,10 +51,10 @@ namespace NeuralNetworkButGood
                 {
                     input[counter++] = bmp.GetPixel(x,y).R == 255 ? 0: 1;
                 });
-                allData.AddData(input, output);
+                dataRaw[thingsAdded++] = (input, output);
             }
 
-            return allData;
+            return new TrainingData(dataRaw, batchSize);
         }
 
         public static void ForEachBitmap(Bitmap bmp, Action<int, int> onForEach)
@@ -68,5 +69,35 @@ namespace NeuralNetworkButGood
         }
 
         public static Random GenerateRandom { get; } = new Random();
+
+        private static Random ShuffleRandom { get; } = new Random();
+
+        public static void ShuffleArray<T>(ref T[] collection, int? seed = null)
+        {
+            Random ShuffleRandom = seed.HasValue ? new Random(seed.Value) : NetworkUtils.ShuffleRandom;
+
+            for (int i = collection.Length - 1; i >= 0; i--)
+            {
+                int swapIndex = ShuffleRandom.Next(i);
+                var b = collection[swapIndex];
+
+                collection[swapIndex] = collection[i];
+                collection[i] = b;
+            }
+        }
+
+        public static void ShuffleList<T>(ref List<T> collection, int? seed = null)
+        {
+            Random ShuffleRandom = seed.HasValue ? new Random(seed.Value) : NetworkUtils.ShuffleRandom;
+
+            for (int i = collection.Count - 1; i >= 0; i--)
+            {
+                int swapIndex = ShuffleRandom.Next(i);
+                var b = collection[swapIndex];
+
+                collection[swapIndex] = collection[i];
+                collection[i] = b;
+            }
+        }
     }
 }

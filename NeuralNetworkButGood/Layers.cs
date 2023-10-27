@@ -11,53 +11,51 @@ namespace NeuralNetworkButGood
     {
         public int LayerSize { get; }
         public abstract Tensor<float> FeedForward(Tensor<float> WorkingVector);
-        public ILayer CopyOf();
     }
 
-    public class GenericLayer : ILayer
+    public interface IWeightable
+    {
+        public Tensor<float> Weights { get; }
+    }
+    public interface IBiasable
+    {
+        public Tensor<float> Biases { get; }
+    }
+    public interface IActivation
+    {
+        public Func<float, float> ActivationFunction { get; }
+    }
+
+    public class GenericLayer : ILayer, IWeightable, IBiasable, IActivation
     {
         public int LayerSize => _layerSize;
         private readonly int _layerSize;
 
-        private readonly int _prevLayerSize;
 
-        public Tensor<float> Weights;
-        public Tensor<float> Biases;
+        public Tensor<float> Weights => _weights;
+        private Tensor<float> _weights;
 
-        private Func<float, float> ActivationFunction;
+        public Tensor<float> Biases => _biases;
+        private Tensor<float> _biases;
 
+        public Func<float, float> ActivationFunction => _activationFunction;
+        private Func<float, float> _activationFunction;
 
         /// <summary>
         /// Default Activation is Relu
         /// </summary>
-        /// <param name="previousLayer"></param>
-        /// <param name="layerSize"></param>
-        /// <param name="Activation"></param>
-        public GenericLayer(ILayer previousLayer, int layerSize, Func<float, float>? Activation = null)
+        public GenericLayer(int previousLayerSize, int layerSize, Func<float, float>? Activation = null)
         {
-            this.Weights = Tensor.Zeros<float>(new TensorShape(layerSize, previousLayer.LayerSize));
-            this.Biases = Tensor.Zeros<float>(new TensorShape(layerSize));
+            this._weights = Tensor.Zeros<float>(new TensorShape(layerSize, previousLayerSize));
+            this._biases = Tensor.Zeros<float>(new TensorShape(layerSize));
 
             Weights.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
-
             Biases.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
             
 
 
-            this.ActivationFunction = Activation ?? ActivationFunctions.Relu;
+            _activationFunction = Activation ?? Activations.Relu;
 
-            _layerSize = layerSize;
-            _prevLayerSize = previousLayer.LayerSize;
-        }
-
-        private GenericLayer(int prevLayerSize, int layerSize, Func<float, float>? Activation = null)
-        {
-            Weights.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
-            Biases.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
-
-            this.ActivationFunction = Activation ?? ActivationFunctions.Relu;
-
-            _prevLayerSize = prevLayerSize;
             _layerSize = layerSize;
         }
 
@@ -67,87 +65,42 @@ namespace NeuralNetworkButGood
             WorkingVector.ForEachInplace(ActivationFunction);
             return WorkingVector;
         }
-
-        public ILayer CopyOf()
-        {
-            var copy = new GenericLayer(_prevLayerSize, LayerSize, ActivationFunction);
-            Weights.CopyTo(copy.Weights);
-            Biases.CopyTo(copy.Biases);
-            return copy;
-        }
-
-        public void Mutate(float range, float prob)
-        {
-            Weights.ForEachInplace((v) =>
-            {
-                return GetOneRange(range, prob) + v;
-            });
-
-            Biases.ForEachInplace((v) =>
-            {
-                return GetOneRange(range, prob) + v;
-            });
-        }
-
-        private float GetOneRange(float range, float prob)
-        {
-            if(Random.Shared.NextDouble() < prob)
-            {
-                return ((float)Random.Shared.NextDouble() - 0.5f) * range;
-            }
-            return 0;
-        }
     }
 
-    public class SoftMax : ILayer
+    public class SoftMaxFullConnected : ILayer, IWeightable, IBiasable
     {
         public int LayerSize => _layerSize;
         private readonly int _layerSize;
 
-        private readonly int _prevLayerSize;
+        public Tensor<float> Weights => _weights;
+        private Tensor<float> _weights;
 
-        public Tensor<float> Weights;
-        public Tensor<float> Biases;
+        public Tensor<float> Biases => _biases;
+        private Tensor<float> _biases;
 
-        public SoftMax(ILayer previousLayer, int layerSize)
+        public SoftMaxFullConnected(int previousLayer, int layerSize)
         {
-            this.Weights = Tensor.Random.Uniform<float>(new TensorShape(layerSize, previousLayer.LayerSize));
-            this.Biases = Tensor.Random.Uniform<float>(new TensorShape(layerSize));
+            this._weights = Tensor.Zeros<float>(new TensorShape(layerSize, previousLayer));
+            this._biases = Tensor.Zeros<float>(new TensorShape(layerSize));
 
-            _layerSize = layerSize;
-            _prevLayerSize = previousLayer.LayerSize;
-        }
+            Weights.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
+            Biases.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
 
-        private SoftMax(int prevLayerSize, int layerSize)
-        {
-            this.Weights = Tensor.Random.Uniform<float>(new TensorShape(prevLayerSize, layerSize));
-            this.Biases = Tensor.Random.Uniform<float>(new TensorShape(layerSize));
-
-            _prevLayerSize = prevLayerSize;
             _layerSize = layerSize;
         }
 
         public Tensor<float> FeedForward(Tensor<float> WorkingVector)
         {
-            WorkingVector = ((WorkingVector * Weights).Sum(1) + Biases);
+            WorkingVector = ((WorkingVector * _weights).Sum(1) + _biases);
+
+            WorkingVector.ForEachInplace((f) =>
+            {
+                return MathF.Pow(MathF.E, f);
+            });
 
             float sum = WorkingVector.Sum()[0];
-
-            if(sum < 0)
-            {
-                throw new ArgumentException("Working Vector has a negative attitude");
-            }
-
             float inverseSum = 1f / sum;
             return WorkingVector * inverseSum;
-        }
-
-        public ILayer CopyOf()
-        {
-            var copy = new SoftMax(_prevLayerSize, LayerSize);
-            Weights.CopyTo(copy.Weights);
-            Biases.CopyTo(copy.Biases);
-            return copy;
         }
     }
 
@@ -165,14 +118,9 @@ namespace NeuralNetworkButGood
         {
             return WorkingVector;
         }
-
-        public ILayer CopyOf()
-        {
-            return new InputLayer(_layerSize);
-        }
     }
 
-    public static class ActivationFunctions
+    public static class Activations
     {
         public static float Tanh(float value)
         {

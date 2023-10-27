@@ -8,31 +8,34 @@ using System.Threading.Tasks;
 
 namespace NeuralNetworkButGood
 {
-    public class NeuralNetworkFast
+    public interface INeuralNetwork
     {
-        float _cost;
-        public float Cost
-        {
-            get
-            {
-                return _cost;
-            }
-            set
-            {
-                _cost = value;
-            }
-        }
+        public Tensor<float> Run(Tensor<float> input);
+        public float[] Run(float[] input);
+    }
 
-        public List<ILayer> Layers = new List<ILayer>();
-        public NeuralNetworkFast()
-        {
+    public interface ILayeredNetwork : INeuralNetwork
+    {
+        public ILayer[] Layers { get; }
+    }
 
+    public class NeuralNetworkFast : ILayeredNetwork
+    {
+        private bool _init = false;
+
+        public ILayer[] Layers => _layers;
+        private ILayer[] _layers;
+
+        public NeuralNetworkFast(int LayerCount)
+        {
+            _layers = new ILayer[LayerCount];
         }
 
         public Tensor<float> Run(Tensor<float> InputVector)
         {
             return DoRun(InputVector);
         }
+
         public float[] Run(float[] InputVector)
         {
             var input = Tensor.FromArray(InputVector, new int[] { InputVector.Length });
@@ -41,11 +44,6 @@ namespace NeuralNetworkButGood
 
         private Tensor<float> DoRun(Tensor<float> InputVector)
         {
-            if (typeof(InputLayer) != Layers[0].GetType())
-            {
-                throw new Exception("Network does not start with an input layer");
-            }
-
             Tensor<float> WorkingVector = Tensor.FromEnumerable(InputVector, InputVector.Shape.ToArray());
             foreach (ILayer layer in Layers)
             {
@@ -55,14 +53,9 @@ namespace NeuralNetworkButGood
             return WorkingVector;
         }
 
-        public void AddLayer(ILayer layer)
+        public void SetLayer(int index, ILayer layer)
         {
-            Layers.Add(layer);
-        }
-
-        public ILayer TopLayer()
-        {
-            return Layers[Layers.Count - 1];
+            Layers[index] = layer;
         }
     }
 }

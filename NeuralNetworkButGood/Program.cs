@@ -8,12 +8,9 @@ namespace NeuralNetworkButGood
 {
     internal class Program
     {
-        [STAThread]
         static void Main()
         {
             //TODO:
-            //Write IBiasLayer
-            //Write IWeightLayer
             //Convolutional
             //Unit testing as Util
             //RELU & Leaky RELU
@@ -34,34 +31,28 @@ namespace NeuralNetworkButGood
 
             Console.WriteLine("Images Loaded");
 
-            NeuralNetworkFast net = new NeuralNetworkFast();
+            TrainingTest(data);
+            return;
 
+            NeuralNetworkFast net = new NeuralNetworkFast(4);
 
-            net.AddLayer(new InputLayer(32*32));
-            net.AddLayer(new GenericLayer(net.TopLayer(), 16, ActivationFunctions.Sigmoid));
-            net.AddLayer(new GenericLayer(net.TopLayer(), 16, ActivationFunctions.Sigmoid));
-            net.AddLayer(new SoftMax(net.TopLayer(), 10));
+            net.SetLayer(0, new InputLayer(32 * 32));
+            net.SetLayer(1, new GenericLayer(net.Layers[0].LayerSize, 16, Activations.Sigmoid));
+            net.SetLayer(2, new GenericLayer(net.Layers[1].LayerSize, 16, Activations.Sigmoid));
+            net.SetLayer(3, new SoftMaxFullConnected(net.Layers[2].LayerSize, 10));
+
 
             string output = @"C:\Users\Jason\OneDrive\Desktop\AI storage Folder\NewNetWeights32x32\";
-            NeuralNetworkVisualiser vis = new NeuralNetworkVisualiser(new Point(8,8), 3, output, 16);
+            NeuralNetworkVisualiser vis = new NeuralNetworkVisualiser(new Point(3,8), 3, output, 16);
 
             
             Console.WriteLine("Begin Sample");
 
-            SoftMax layer = (SoftMax)net.Layers[3];
-
-
-            for (int j = 0; j < 24; j++)//now
+            for(int i = 0; i < 8; i++)
             {
-                layer.Weights[8, 9] = (j - 12f) / 1.5f;
-
-                vis.SampleWeight(net, data, " " + j);
-
-                for (int i = 0; i < 16; i++)//prev
-                {
-                }
+                vis.Location = new Point(i, vis.Location.Y);
+                vis.SampleWeight(net, data);
             }
-
 
             Console.WriteLine("Done");
             Console.ReadLine();
@@ -71,6 +62,18 @@ namespace NeuralNetworkButGood
         {
             Console.WriteLine(msg);
             return int.Parse(Console.ReadLine());
+        }
+
+        public static void TrainingTest(TrainingData data)
+        {
+            NeuralNetworkFast net = new NeuralNetworkFast(4);
+
+            net.SetLayer(0, new InputLayer(32 * 32));
+            net.SetLayer(1, new GenericLayer(net.Layers[0].LayerSize, 16, Activations.Sigmoid));
+            net.SetLayer(2, new GenericLayer(net.Layers[1].LayerSize, 16, Activations.Sigmoid));
+            net.SetLayer(3, new SoftMaxFullConnected(net.Layers[2].LayerSize, 10));
+
+            NeuralNetworkTrainer.TrainStochasticGradientDecsent(net, data, 1000);
         }
     }
 }

@@ -25,16 +25,21 @@ namespace NeuralNetworkButGood
             this.graphRenderer = new GraphRenderer(new Point(256, 256), Color.Gray, Color.DarkCyan, Color.LightCyan);
         }
 
-        public void SampleWeight(NeuralNetworkFast neuralNetwork, TrainingData data,string append, int pointsToSample = 128)
+        public void SampleWeight(NeuralNetworkFast neuralNetwork, TrainingData data, string append = "", int pointsToSample = 128)
         {
             ILayer activeLayer = neuralNetwork.Layers[layer];
 
-            (Tensor<float>, Tensor<float>)[] TrainingDataRaw = data.GetDataInstance();
+            if(activeLayer is not IWeightable)
+            {
+                throw new ArgumentException($"Layer {layer} is not Weighted");
+            }
+
+            (Tensor<float>, Tensor<float>)[] TrainingDataRaw = data.GetAllData();
 
             graphRenderer.GenerateImageFromFunction(pointsToSample, GeneratePath(append),
             (newWeightValue) =>
             {
-                SoftMax layer = (SoftMax)neuralNetwork.Layers[this.layer];
+                IWeightable layer = (IWeightable)neuralNetwork.Layers[this.layer];
 
                 layer.Weights[Location.X, Location.Y] = newWeightValue;
 
