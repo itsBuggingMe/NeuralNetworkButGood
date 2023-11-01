@@ -3,11 +3,22 @@ using System.Drawing;
 using Tensornet;
 using System;
 using System.Windows;
+using MNIST.IO;
+using System.Security.Cryptography;
+using Microsoft.VisualBasic;
 
 namespace NeuralNetworkButGood
 {
     internal class Program
     {
+        const string output = @"C:\Users\Jason\OneDrive\Desktop\AI storage Folder\NewNetWeights32x32\";
+
+        private static readonly string[,] dataFilePaths =
+        {
+           { @"G:\Shared drives\TRAINNING DATA\Mnist Dataset\train-images.idx3-ubyte", @"G:\Shared drives\TRAINNING DATA\Mnist Dataset\train-labels.idx1-ubyte" },
+           { @"G:\Shared drives\TRAINNING DATA\Mnist Dataset\t10k-images.idx3-ubyte", @"G:\Shared drives\TRAINNING DATA\Mnist Dataset\t10k-labels.idx1-ubyte" }
+        };
+
         static void Main()
         {
             //TODO:
@@ -16,76 +27,13 @@ namespace NeuralNetworkButGood
             //Gradient, Schotacisc GD, Adagrad? grav?
             //GAN image gen?
 
-            string[] paths = Directory.GetFiles(@"G:\Shared drives\TRAINNING DATA\compressed 32x32");
-            /*
-            TrainingData data = NetworkUtils.ImageToTrainingDataBW(paths,
-                (path) => {
-                    float[] ans = new float[10];
-                    ans[path[49] - '0'] = 1;
-                    return ans;
-                }, 
-                paths.Length
-                );*/
-
-            Console.WriteLine("Images Loaded");
-
-            //TrainingTest(data);
-            //return;
-
-            NeuralNetworkFast net = new NeuralNetworkFast(4);
-
-            net.SetLayer(0, new InputLayer(32 * 32));
-            net.SetLayer(1, new GenericLayer(net.Layers[0].LayerSize, 16, Activations.Relu));
-            net.SetLayer(2, new GenericLayer(net.Layers[1].LayerSize, 16, Activations.Relu));
-            net.SetLayer(3, new SoftMaxFullConnected(net.Layers[2].LayerSize, 10));
-
-            TimeSpan[] time = NetworkUtils.MultiBenchmarkNetwork(net, new TensorShape(32 * 32),10, 10000);
-
-            double total = 0;
-
-            foreach(var t in time)
-            {
-                Console.WriteLine(t.TotalMilliseconds);
-                total += t.TotalMilliseconds;
-            }
-
-            Console.WriteLine("+++++++++++++++++++++++++++++++++++");
-
-            NeuralNetworkFast net2 = new NeuralNetworkFast(4);
-
-            net2.SetLayer(0, new InputLayer(64));
-            net2.SetLayer(1, new GenericLayer(net2.Layers[0].LayerSize, 64, Activations.Relu));
-            net2.SetLayer(2, new GenericLayer(net2.Layers[1].LayerSize, 64, Activations.Relu));
-            net2.SetLayer(2, new GenericLayer(net2.Layers[1].LayerSize, 64, Activations.Relu));
-            net2.SetLayer(3, new SoftMaxFullConnected(net2.Layers[2].LayerSize, 10));
-
-            TimeSpan[] time2 = NetworkUtils.MultiBenchmarkNetwork(net2, new TensorShape(64), 10, 10000);
-
-
-            foreach (var t in time2)
-            {
-                Console.WriteLine(t.TotalMilliseconds);
-                total += t.TotalMilliseconds;
-            }
-
-            Console.WriteLine("Total: " + total);
-
-            Console.ReadLine();
-            string output = @"C:\Users\Jason\OneDrive\Desktop\AI storage Folder\NewNetWeights32x32\";
-            NeuralNetworkVisualiser vis = new NeuralNetworkVisualiser(new Point(3,8), 3, output, 16);
-
-            
-            Console.WriteLine("Begin Sample");
-
-            for(int i = 0; i < 8; i++)
-            {
-                vis.Location = new Point(i, vis.Location.Y);
-                vis.SampleWeight(net, null);
-            }
-
+            var tuples = GetMnistDataset();
             Console.WriteLine("Done");
-            Console.ReadLine();
+            Console.WriteLine("Done");
         }
+
+
+
 
         public static int Ask(string msg)
         {
@@ -103,6 +51,57 @@ namespace NeuralNetworkButGood
             net.SetLayer(3, new SoftMaxFullConnected(net.Layers[2].LayerSize, 10));
 
             NeuralNetworkTrainer.TrainStochasticGradientDecsent(net, data, 1000);
+        }
+
+        public static TrainingData GetImages()
+        {
+            string[] paths = Directory.GetFiles(@"G:\Shared drives\TRAINNING DATA\compressed 32x32");
+
+            TrainingData data = NetworkUtils.ImageToTrainingDataBW(paths,
+                (path) =>
+                {
+                    float[] ans = new float[10];
+                    ans[path[49] - '0'] = 1;
+                    return ans;
+                },
+                paths.Length
+                );
+
+            return data;
+        }
+
+        public static (TrainingDataLite, TrainingDataLite) GetMnistDataset()
+        {
+            TestCase[] dataTrain = FileReaderMNIST.LoadImagesAndLables(dataFilePaths[0, 0], dataFilePaths[0, 1]).ToArray();
+            TestCase[] dataTest = FileReaderMNIST.LoadImagesAndLables(dataFilePaths[1, 0], dataFilePaths[1, 1]).ToArray();
+
+            var inputImageShape = new TensorShape(28, 28);
+
+            var tensorsTrain = LoadDataAndCreateTensors(dataTrain, inputImageShape);
+            var tensorsTest = LoadDataAndCreateTensors(dataTest, inputImageShape);
+
+            return (new TrainingDataLite(tensorsTrain), new TrainingDataLite(tensorsTest));
+        }
+
+        private static (Tensor<float>, Tensor<float>)[] LoadDataAndCreateTensors(TestCase[] data, TensorShape inputImageShape)
+        {
+            var tensors = new (Tensor<float>, Tensor<float>)[data.Length];
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                float[] ansArr = new float[10];
+                ansArr[data[i].Label] = 1;
+
+                float[] imageArr = new float[28 * 28];
+                for (int p = 0; p < imageArr.Length; p++)
+                {
+                    imageArr[p] = data[i].Image[p / 28, p % 28] / 255f;
+                }
+
+                tensors[i] = (Tensor.FromArray(imageArr, inputImageShape), NetworkUtils.TensorFromVector(ansArr));
+            }
+
+            return tensors;
         }
     }
 }

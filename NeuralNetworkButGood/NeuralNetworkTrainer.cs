@@ -154,4 +154,35 @@ namespace NeuralNetworkButGood
             return DataVectors;
         }
     }
+
+    public class TrainingDataLite
+    {
+        private (Tensor<float>, Tensor<float>)[] DataVectors;
+
+        public int DataCount => DataVectors.Length;
+
+        public TrainingDataLite((Tensor<float>, Tensor<float>)[] DataVectors)
+        {
+            this.DataVectors = DataVectors;
+
+            NetworkUtils.ShuffleArray(ref this.DataVectors);
+        }
+
+        public void Shuffle()
+        {
+            NetworkUtils.ShuffleArray(ref DataVectors);
+        }
+
+        public (Tensor<float>, Tensor<float>) GetSample(int? index = null)
+        {
+            return DataVectors[index.HasValue ? index.Value : Random.Shared.Next(DataCount)];
+        }
+
+        public (Tensor<float>, Tensor<float>)[] GetBatch(int size)
+        {
+            int startIndex = Random.Shared.Next(DataCount - size);
+            return DataVectors[startIndex..(startIndex+size)];
+        }
+    }
+
 }

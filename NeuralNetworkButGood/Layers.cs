@@ -10,27 +10,29 @@ namespace NeuralNetworkButGood
 {
     public interface ILayer
     {
-        public int LayerSize { get; }
+        public TensorShape LayerSize { get; }
         public abstract Tensor<float> FeedForward(Tensor<float> WorkingVector);
     }
 
-    public interface IWeightable
+    public interface IWeightBias
     {
         public Tensor<float> Weights { get; }
-    }
-    public interface IBiasable
-    {
         public Tensor<float> Biases { get; }
     }
+    public interface IKernel
+    {
+        public Tensor<float> Kernel { get; }
+    }
+
     public interface IActivation
     {
         public Func<float, float> ActivationFunction { get; }
     }
 
-    public class GenericLayer : ILayer, IWeightable, IBiasable, IActivation
+    public class GenericLayer : ILayer, IWeightBias, IActivation
     {
-        public int LayerSize => _layerSize;
-        private readonly int _layerSize;
+        public TensorShape LayerSize => _layerSize;
+        private readonly TensorShape _layerSize;
 
 
         public Tensor<float> Weights => _weights;
@@ -57,7 +59,7 @@ namespace NeuralNetworkButGood
 
             _activationFunction = Activation ?? Activations.Relu;
 
-            _layerSize = layerSize;
+            _layerSize = new TensorShape(layerSize);
         }
 
         public Tensor<float> FeedForward(Tensor<float> WorkingVector)
@@ -68,10 +70,34 @@ namespace NeuralNetworkButGood
         }
     }
 
-    public class SoftMaxFullConnected : ILayer, IWeightable, IBiasable
+    public class ConvolutionalLayer : ILayer, IKernel, IActivation
     {
-        public int LayerSize => _layerSize;
-        private readonly int _layerSize;
+        public Tensor<float> Kernel => _kernel;
+        private Tensor<float> _kernel;
+
+        public Func<float, float> ActivationFunction => _activationFunction;
+        private Func<float, float> _activationFunction;
+
+        public TensorShape LayerSize => _layerSize;
+        private TensorShape _layerSize;
+
+        public ConvolutionalLayer(int width, int length, int kernelSize, Func<float, float>? Activation = null)
+        {
+            this._layerSize = new TensorShape(width, length);
+
+            _kernel = Tensor.Zeros<float>(new TensorShape(kernelSize, kernelSize));
+        }
+
+        public Tensor<float> FeedForward(Tensor<float> input)
+        {
+            
+        }
+    }
+
+    public class SoftMaxFullConnected : ILayer, IWeightBias
+    {
+        public TensorShape LayerSize => _layerSize;
+        private readonly TensorShape _layerSize;
 
         public Tensor<float> Weights => _weights;
         private Tensor<float> _weights;
@@ -87,7 +113,7 @@ namespace NeuralNetworkButGood
             Weights.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
             Biases.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
 
-            _layerSize = layerSize;
+            _layerSize = new TensorShape(layerSize);
         }
 
         public Tensor<float> FeedForward(Tensor<float> WorkingVector)
@@ -107,12 +133,12 @@ namespace NeuralNetworkButGood
 
     public class InputLayer : ILayer
     {
-        public int LayerSize => _layerSize;
-        private readonly int _layerSize;
+        public TensorShape LayerSize => _layerSize;
+        private readonly TensorShape _layerSize;
 
         public InputLayer(int layerSize)
         {
-            _layerSize = layerSize;
+            _layerSize = new TensorShape(layerSize);
         }
 
         public Tensor<float> FeedForward(Tensor<float> WorkingVector)
@@ -149,5 +175,4 @@ namespace NeuralNetworkButGood
             return value > 0 ? value : value * LeakValue;
         }
     }
-
 }
