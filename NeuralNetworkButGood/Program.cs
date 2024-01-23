@@ -23,18 +23,20 @@ namespace NeuralNetworkButGood
         {
             //TODO:
             //Convolutional
-            //RELU & Leaky RELU
             //Gradient, Schotacisc GD, Adagrad? grav?
             //GAN image gen?
 
-            var tuples = GetMnistDataset();
-            Console.WriteLine("Done");
-            Console.WriteLine("Done");
+            NeuralNetworkFast neuralNetwork = new NeuralNetworkFast(3);
+            neuralNetwork.SetLayer(0, new InputLayer(2));
+            neuralNetwork.SetLayer(1, new GenericLayer(2, 8));
+            neuralNetwork.SetLayer(2, new SoftMaxFullConnected(8, 3));
+
+            NeuralNetworkVisualiser.
         }
 
 
 
-
+        /*
         public static int Ask(string msg)
         {
             Console.WriteLine(msg);
@@ -102,6 +104,6 @@ namespace NeuralNetworkButGood
             }
 
             return tensors;
-        }
+        }*/
     }
 }

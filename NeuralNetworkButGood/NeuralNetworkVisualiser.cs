@@ -29,7 +29,7 @@ namespace NeuralNetworkButGood
         {
             ILayer activeLayer = neuralNetwork.Layers[layer];
 
-            if(activeLayer is not IWeightable)
+            if(activeLayer is not IWeightBias)
             {
                 throw new ArgumentException($"Layer {layer} is not Weighted");
             }
@@ -39,7 +39,7 @@ namespace NeuralNetworkButGood
             graphRenderer.GenerateImageFromFunction(pointsToSample, GeneratePath(append),
             (newWeightValue) =>
             {
-                IWeightable layer = (IWeightable)neuralNetwork.Layers[this.layer];
+                IWeightBias layer = (IWeightBias)neuralNetwork.Layers[this.layer];
 
                 layer.Weights[Location.X, Location.Y] = newWeightValue;
 
@@ -62,6 +62,5 @@ namespace NeuralNetworkButGood
         {
             return $"{outputPath}Layer{layer} Row{Location.X} Col{Location.Y}{append}.png";
         }
-
     }
 }

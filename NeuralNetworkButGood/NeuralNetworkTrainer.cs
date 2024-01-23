@@ -20,10 +20,10 @@ namespace NeuralNetworkButGood
 
             for (int l = 1; l < network.Layers.Length; l++)
             {
-                if (network.Layers[l] is not IWeightable)
+                if (network.Layers[l] is not IWeightBias)
                     throw new ArgumentException($"Layer {l} is not IWeightable");
 
-                Weights[l - 1] = ((IWeightable)network.Layers[l]).Weights;
+                Weights[l - 1] = ((IWeightBias)network.Layers[l]).Weights;
                 Gradients[l - 1] = Tensor.Zeros<float>(Weights[l - 1].Shape);
             }
 

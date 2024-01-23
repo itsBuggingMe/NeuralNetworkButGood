@@ -52,8 +52,8 @@ namespace NeuralNetworkButGood
             this._weights = Tensor.Zeros<float>(new TensorShape(layerSize, previousLayerSize));
             this._biases = Tensor.Zeros<float>(new TensorShape(layerSize));
 
-            Weights.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
-            Biases.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
+            Weights.ForEachInplace((f) => NetworkUtils.GenerateRandom.NextSingle() * 2 - 1);
+            Biases.ForEachInplace((f) => NetworkUtils.GenerateRandom.NextSingle() * 2 - 1);
             
 
 
@@ -86,11 +86,12 @@ namespace NeuralNetworkButGood
             this._layerSize = new TensorShape(width, length);
 
             _kernel = Tensor.Zeros<float>(new TensorShape(kernelSize, kernelSize));
+            _activationFunction = Activation;
         }
 
         public Tensor<float> FeedForward(Tensor<float> input)
         {
-            
+            throw new NotImplementedException();
         }
     }
 
@@ -105,9 +106,9 @@ namespace NeuralNetworkButGood
         public Tensor<float> Biases => _biases;
         private Tensor<float> _biases;
 
-        public SoftMaxFullConnected(int previousLayer, int layerSize)
+        public SoftMaxFullConnected(int previousLayerSize, int layerSize)
         {
-            this._weights = Tensor.Zeros<float>(new TensorShape(layerSize, previousLayer));
+            this._weights = Tensor.Zeros<float>(new TensorShape(layerSize, previousLayerSize));
             this._biases = Tensor.Zeros<float>(new TensorShape(layerSize));
 
             Weights.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
@@ -122,7 +123,7 @@ namespace NeuralNetworkButGood
 
             WorkingVector.ForEachInplace((f) =>
             {
-                return MathF.Pow(MathF.E, f);
+                return MathF.Exp(f);
             });
 
             float sum = WorkingVector.Sum()[0];
