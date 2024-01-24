@@ -24,14 +24,35 @@ namespace NeuralNetworkButGood
             //TODO:
             //Convolutional
             //Gradient, Schotacisc GD, Adagrad? grav?
-            //GAN image gen?
+            //GAN image gens
 
-            NeuralNetworkFast neuralNetwork = new NeuralNetworkFast(3);
+            const int datapts = 512;
+
+            (float[], float[])[] Data = new (float[], float[])[datapts];
+            for(int i = 0; i < datapts; i++)
+            {
+                Data[i] = GenerateOneDataPoint();
+            }
+
+            static (float[], float[]) GenerateOneDataPoint()
+            {
+                float[] left = new float[2] { Random.Shared.NextSingle() * 4 - 2  , Random.Shared.NextSingle() * 4 - 2 };
+                float[] right = new float[1] { Math.Sqrt(left[0] * left[0] + left[1] + left[1]) < 0.75f ? 1 : 0 };
+
+                return (left, right);
+            }
+
+            TrainingData dataCollection = new TrainingData(Data, 64);
+
+            //TODO: Factory
+            NeuralNetworkFast neuralNetwork = new NeuralNetworkFast(2);
             neuralNetwork.SetLayer(0, new InputLayer(2));
-            neuralNetwork.SetLayer(1, new GenericLayer(2, 8));
-            neuralNetwork.SetLayer(2, new SoftMaxFullConnected(8, 3));
+            //neuralNetwork.SetLayer(1, new GenericLayer(2, 8, Activations.Tanh));
+            neuralNetwork.SetLayer(1, new GenericLayer(2, 1, Activations.Sigmoid));
 
-            NeuralNetworkVisualiser.
+            NeuralNetworkTrainer.TrainStochasticGradientDecsent(neuralNetwork, dataCollection, 10_000);
+
+            Console.ReadLine();
         }
 
 

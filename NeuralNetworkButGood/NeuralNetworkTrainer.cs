@@ -15,39 +15,40 @@ namespace NeuralNetworkButGood
     {
         public static NeuralNetworkFast TrainStochasticGradientDecsent(NeuralNetworkFast network, TrainingData data, int epochs, float learningRate = 0.05f)
         {
-            Tensor<float>[] Weights = new Tensor<float>[network.Layers.Length - 1];
-            Tensor<float>[] Gradients = new Tensor<float>[network.Layers.Length - 1];
+            int layers = network.Layers.Length;
 
-            for (int l = 1; l < network.Layers.Length; l++)
+            Tensor<float>[] Weights = new Tensor<float>[layers - 1];
+
+            for (int l = 1; l < layers; l++)
             {
                 if (network.Layers[l] is not IWeightBias)
                     throw new ArgumentException($"Layer {l} is not IWeightable");
 
                 Weights[l - 1] = ((IWeightBias)network.Layers[l]).Weights;
-                Gradients[l - 1] = Tensor.Zeros<float>(Weights[l - 1].Shape);
             }
+
+            int[] Sizes = Weights.Select(w => w.Shape[0]).ToArray();
 
             for (int i = 0; i < epochs; i++)
             {
                 (Tensor<float>, Tensor<float>) trainingData = data.GetDataInstance();
 
-                Tensor<float> NetworkOutput = network.Run(trainingData.Item1);
+                Tensor<float> NetworkOutput = network.RunCapture(trainingData.Item1, out Tensor<float>[] neuronData);
 
-                for (int LayerIndex = Weights.Length; LayerIndex > 0; LayerIndex--)
-                {// do back prop
-                    Tensor<float> diffVector = trainingData.Item2 - NetworkOutput;
-                    /*
-                    for(int NeuronDifferenceIndex = 0; NeuronDifferenceIndex < diffVector.)
-                    {
+                Tensor<float> thisNeuronGradients = trainingData.Item2 - neuronData[layers - 1];
 
-                    }*/
+                Tensor<float> error = NetworkOutput - trainingData.Item2;
+                Tensor<float>[] gradients = network.Backpropagate(error, neuronData);
+
+                for (int l = 0; l < Weights.Length; l++)
+                {
+                    Weights[l] -= learningRate * gradients[l];
+                    Weights[l].ForEachInplace(f => Random.Shared.NextSingle() * 2 - 1);
                 }
-                //apply gradients
-
 
 
                 //report
-                if(i % 10 == 0)
+                if (i % 20 == 0)
                     Console.WriteLine($"Epoch: {i} NetworkCost: {GetCostOfNetwork(network, data)}");
             }
 
@@ -95,21 +96,6 @@ namespace NeuralNetworkButGood
 
         public TrainingData((Tensor<float>, Tensor<float>)[] DataVectors, int batchSize, bool RemoveExtraData = true)
         {
-            DoInitalise(DataVectors, batchSize, RemoveExtraData);
-        }
-
-        public TrainingData((float[], float[])[] DataVectors, int batchSize, bool RemoveExtraData = true)
-        {
-            (Tensor<float>, Tensor<float>)[] DataTensors = new (Tensor<float>, Tensor<float>)[batchSize];
-
-            for (int i = 0; i < DataVectors.Length; i++)
-                DataTensors[i] = (NetworkUtils.TensorFromVector(DataVectors[i].Item1), NetworkUtils.TensorFromVector(DataVectors[i].Item2));
-
-            DoInitalise(DataTensors, batchSize,RemoveExtraData);
-        }
-
-        private void DoInitalise((Tensor<float>, Tensor<float>)[] DataVectors, int batchSize, bool RemoveExtraData)
-        {
             if (!RemoveExtraData && (DataVectors.Length % batchSize != 0))
                 throw new ArgumentException($"The length of DataVectors ({DataVectors.Length}) is not divisible by batch size ({batchSize})");
 
@@ -124,12 +110,28 @@ namespace NeuralNetworkButGood
             for (int i = 0; i < batchCount; i++)
             {
                 DataVectorsBatched[i] = new (Tensor<float>, Tensor<float>)[batchSize];
-                for(int j = 0; j < batchSize; j++)
+                for (int j = 0; j < batchSize; j++)
                 {
                     DataVectorsBatched[i][j] = DataVectors[i * batchSize + j];
                 }
             }
         }
+
+        public TrainingData((float[], float[])[] DataVectors, int batchSize, bool RemoveExtraData = true) : this(Transform(DataVectors), batchSize, RemoveExtraData)
+        {
+            
+        }
+
+        static (Tensor<float>, Tensor<float>)[] Transform((float[], float[])[] DataVectors)
+        {
+            (Tensor<float>, Tensor<float>)[] DataTensors = new (Tensor<float>, Tensor<float>)[DataVectors.Length];
+
+            for (int i = 0; i < DataVectors.Length; i++)
+                DataTensors[i] = (NetworkUtils.TensorFromVector(DataVectors[i].Item1), NetworkUtils.TensorFromVector(DataVectors[i].Item2));
+
+            return DataTensors;
+        }
+
         public (Tensor<float>, Tensor<float>) GetDataInstance()
         {
             return DataVectors[instanceDataGetIndex++ % DataVectors.Length];

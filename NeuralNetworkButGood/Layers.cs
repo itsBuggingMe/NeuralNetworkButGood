@@ -18,6 +18,7 @@ namespace NeuralNetworkButGood
     {
         public Tensor<float> Weights { get; }
         public Tensor<float> Biases { get; }
+        public Tensor<float> BackProp(Tensor<float> grad);
     }
     public interface IKernel
     {
@@ -54,8 +55,6 @@ namespace NeuralNetworkButGood
 
             Weights.ForEachInplace((f) => NetworkUtils.GenerateRandom.NextSingle() * 2 - 1);
             Biases.ForEachInplace((f) => NetworkUtils.GenerateRandom.NextSingle() * 2 - 1);
-            
-
 
             _activationFunction = Activation ?? Activations.Relu;
 
@@ -67,6 +66,15 @@ namespace NeuralNetworkButGood
             WorkingVector = (WorkingVector * Weights).Sum(1) + Biases;
             WorkingVector.ForEachInplace(ActivationFunction);
             return WorkingVector;
+        }
+
+        public Tensor<float> BackProp(Tensor<float> grad)
+        {
+            Tensor<float> activationDerivative = Weights.ForEach(Activations.SigmoidDir);
+
+            Tensor<float> layerGradient = grad * activationDerivative;
+
+            return Weights * layerGradient;
         }
     }
 
@@ -111,8 +119,8 @@ namespace NeuralNetworkButGood
             this._weights = Tensor.Zeros<float>(new TensorShape(layerSize, previousLayerSize));
             this._biases = Tensor.Zeros<float>(new TensorShape(layerSize));
 
-            Weights.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
-            Biases.ForEachInplace((f) => { return (float)NetworkUtils.GenerateRandom.NextDouble() * 2 - 1; });
+            Weights.ForEachInplace((f) => NetworkUtils.GenerateRandom.NextSingle() * 2 - 1);
+            Biases.ForEachInplace((f) => NetworkUtils.GenerateRandom.NextSingle() * 2 - 1);
 
             _layerSize = new TensorShape(layerSize);
         }
@@ -129,6 +137,11 @@ namespace NeuralNetworkButGood
             float sum = WorkingVector.Sum()[0];
             float inverseSum = 1f / sum;
             return WorkingVector * inverseSum;
+        }
+
+        public Tensor<float> BackProp(Tensor<float> grad)
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -167,6 +180,13 @@ namespace NeuralNetworkButGood
         public static float Sigmoid(float value)
         {
             return 1f / (1f + MathF.Exp(-value));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float SigmoidDir(float value)
+        {
+            float sig = Sigmoid(value);
+            return sig * (1 - sig);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

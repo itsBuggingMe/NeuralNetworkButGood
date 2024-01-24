@@ -5,6 +5,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Reflection.Emit;
+using System.Drawing.Printing;
 
 namespace NeuralNetworkButGood
 {
@@ -42,6 +44,23 @@ namespace NeuralNetworkButGood
             return DoRun(input).ToArray();
         }
 
+        public Tensor<float> RunCapture(Tensor<float> InputVector, out Tensor<float>[] Neurons)
+        {
+            Tensor<float> WorkingVector = Tensor.FromEnumerable(InputVector, InputVector.Shape.ToArray());
+
+            Neurons = new Tensor<float>[_layers.Length];
+
+            for(int i = 0; i < _layers.Length; i++)
+            {
+                WorkingVector = _layers[i].FeedForward(WorkingVector);
+
+                Neurons[i] = Tensor.Zeros<float>(WorkingVector.Shape);
+                WorkingVector.CopyTo(Neurons[i]);
+            }
+
+            return WorkingVector;
+        }
+
         private Tensor<float> DoRun(Tensor<float> InputVector)
         {
             Tensor<float> WorkingVector = Tensor.FromEnumerable(InputVector, InputVector.Shape.ToArray());
@@ -51,6 +70,27 @@ namespace NeuralNetworkButGood
             }
 
             return WorkingVector;
+        }
+
+        public Tensor<float>[] Backpropagate(Tensor<float> error, Tensor<float>[] neuronData)
+        {
+            int layersCount = _layers.Length;
+
+            Tensor<float>[] gradients = new Tensor<float>[layersCount - 1];
+
+            for (int l = layersCount - 1; l > 0; l--)
+            {
+                //tmp derivative
+                Tensor<float> activationDerivative = neuronData[l - 1].ForEach(f => Activations.SigmoidDir(f));
+
+                Tensor<float> layerGradient = error * activationDerivative;
+
+                gradients[l - 1] = layerGradient;
+
+                error = ((IWeightBias)_layers[l]).BackProp(layerGradient);
+            }
+
+            return gradients;
         }
 
         public void SetLayer(int index, ILayer layer)
