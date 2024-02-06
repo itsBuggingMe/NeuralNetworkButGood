@@ -72,27 +72,6 @@ namespace NeuralNetworkButGood
             return WorkingVector;
         }
 
-        public Tensor<float>[] Backpropagate(Tensor<float> error, Tensor<float>[] neuronData)
-        {
-            int layersCount = _layers.Length;
-
-            Tensor<float>[] gradients = new Tensor<float>[layersCount - 1];
-
-            for (int l = layersCount - 1; l > 0; l--)
-            {
-                //tmp derivative
-                Tensor<float> activationDerivative = neuronData[l - 1].ForEach(f => Activations.SigmoidDir(f));
-
-                Tensor<float> layerGradient = error * activationDerivative;
-
-                gradients[l - 1] = layerGradient;
-
-                error = ((IWeightBias)_layers[l]).BackProp(layerGradient);
-            }
-
-            return gradients;
-        }
-
         public void SetLayer(int index, ILayer layer)
         {
             Layers[index] = layer;

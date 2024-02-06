@@ -2,13 +2,14 @@
 using System.Drawing;
 using Tensornet;
 using System;
-using System.Windows;
+using System.Numerics;
 using MNIST.IO;
 using System.Security.Cryptography;
 using Microsoft.VisualBasic;
 
 namespace NeuralNetworkButGood
 {
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     internal class Program
     {
         const string output = @"C:\Users\Jason\OneDrive\Desktop\AI storage Folder\NewNetWeights32x32\";
@@ -26,9 +27,51 @@ namespace NeuralNetworkButGood
             //Gradient, Schotacisc GD, Adagrad? grav?
             //GAN image gens
 
+            
+
             const int datapts = 512;
 
+            Bitmap image = new Bitmap(@"C:\Users\Jason\Downloads\trainThis.png");
             (float[], float[])[] Data = new (float[], float[])[datapts];
+            for (int i = 0; i < datapts; i++)
+            {
+                Data[i] = SampleImage(image, Random.Shared.NextSingle(), Random.Shared.NextSingle());
+            }
+            static (float[], float[]) SampleImage(Bitmap bmp, float x, float y)
+            {
+                int length = bmp.Width;
+                int height = bmp.Height;
+
+                Color color = bmp.GetPixel((int)(x * length), (int)(y * height));
+                return (new float[] { x,y }, new float[] { color.R / 255f, color.G / 255f, color.B / 255f });
+            }
+
+            TrainingData dataCollection = new TrainingData(Data, 128);
+
+            //TODO: Factory
+            NeuralNetworkFast neuralNetwork = new NeuralNetworkFast(3);
+
+            neuralNetwork.SetLayer(0, new InputLayer(2));
+            neuralNetwork.SetLayer(1, new GenericLayer(2, 2048, Activations.LeakyRelu));
+            neuralNetwork.SetLayer(2, new GenericLayer(2048, 3, Activations.Sigmoid));
+
+            NeuralNetworkTrainer.TrainStochasticGradientDecsent(neuralNetwork, dataCollection, 5000);
+
+            SolutionSpaceVisualizer.DrawRanges(256, 256, @"C:\Users\Jason\Downloads\whynowork.png",
+                new Vector2(0, 1), new Vector2(0, 1),
+                (x, y) =>
+                {
+                    float[] values = neuralNetwork.Run(new float[] { x, y });
+                    return Color.FromArgb(fTB(values[0]), fTB(values[1]), fTB(values[2]));
+
+                    byte fTB(float v)
+                    {
+                        return (byte)(v * 255);
+                    }
+                });
+
+            
+            return;
             for(int i = 0; i < datapts; i++)
             {
                 Data[i] = GenerateOneDataPoint();
@@ -37,22 +80,36 @@ namespace NeuralNetworkButGood
             static (float[], float[]) GenerateOneDataPoint()
             {
                 float[] left = new float[2] { Random.Shared.NextSingle() * 4 - 2  , Random.Shared.NextSingle() * 4 - 2 };
-                float[] right = new float[1] { Math.Sqrt(left[0] * left[0] + left[1] + left[1]) < 0.75f ? 1 : 0 };
+                float[] right = new float[1] { left[1] > parabola(left[0]) ? 1 : 0 };
+                //float[] right = new float[1] { left[0] < 0 ? 1 : 0 };
+
+                float parabola(float x)
+                {
+                    return x * x;
+                }
 
                 return (left, right);
             }
-
-            TrainingData dataCollection = new TrainingData(Data, 64);
+            /*
+            TrainingData dataCollection = new TrainingData(Data, 128);
 
             //TODO: Factory
-            NeuralNetworkFast neuralNetwork = new NeuralNetworkFast(2);
+            NeuralNetworkFast neuralNetwork = new NeuralNetworkFast(3);
             neuralNetwork.SetLayer(0, new InputLayer(2));
-            //neuralNetwork.SetLayer(1, new GenericLayer(2, 8, Activations.Tanh));
-            neuralNetwork.SetLayer(1, new GenericLayer(2, 1, Activations.Sigmoid));
+            neuralNetwork.SetLayer(1, new GenericLayer(2, 16, Activations.Sigmoid));
+            neuralNetwork.SetLayer(2, new GenericLayer(16, 1, Activations.Sigmoid));
 
-            NeuralNetworkTrainer.TrainStochasticGradientDecsent(neuralNetwork, dataCollection, 10_000);
+            NeuralNetworkTrainer.TrainStochasticGradientDecsent(neuralNetwork, dataCollection, 500);
 
-            Console.ReadLine();
+            SolutionSpaceVisualizer.DrawRanges(256, 256, @"C:\Users\Jason\Downloads\whynowork.png", 
+                new Vector2(-4, 4), new Vector2(-4, 4), 
+                (x,y) =>
+            {
+                byte v = (byte)(neuralNetwork.Run(new float[] { x,y })[0] * 255);
+                return Color.FromArgb(v, v, v);
+            });
+
+            Console.ReadLine();*/
         }
 
 

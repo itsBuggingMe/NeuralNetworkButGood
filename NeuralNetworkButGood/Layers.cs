@@ -12,13 +12,13 @@ namespace NeuralNetworkButGood
     {
         public TensorShape LayerSize { get; }
         public abstract Tensor<float> FeedForward(Tensor<float> WorkingVector);
+
     }
 
     public interface IWeightBias
     {
-        public Tensor<float> Weights { get; }
-        public Tensor<float> Biases { get; }
-        public Tensor<float> BackProp(Tensor<float> grad);
+        public Tensor<float> Weights { get; set; }
+        public Tensor<float> Biases { get; set; }
     }
     public interface IKernel
     {
@@ -36,11 +36,9 @@ namespace NeuralNetworkButGood
         private readonly TensorShape _layerSize;
 
 
-        public Tensor<float> Weights => _weights;
-        private Tensor<float> _weights;
+        public Tensor<float> Weights { get; set; }
 
-        public Tensor<float> Biases => _biases;
-        private Tensor<float> _biases;
+        public Tensor<float> Biases { get; set; }
 
         public Func<float, float> ActivationFunction => _activationFunction;
         private Func<float, float> _activationFunction;
@@ -50,8 +48,8 @@ namespace NeuralNetworkButGood
         /// </summary>
         public GenericLayer(int previousLayerSize, int layerSize, Func<float, float>? Activation = null)
         {
-            this._weights = Tensor.Zeros<float>(new TensorShape(layerSize, previousLayerSize));
-            this._biases = Tensor.Zeros<float>(new TensorShape(layerSize));
+            Weights = Tensor.Zeros<float>(new TensorShape(layerSize, previousLayerSize));
+            Biases = Tensor.Zeros<float>(new TensorShape(layerSize));
 
             Weights.ForEachInplace((f) => NetworkUtils.GenerateRandom.NextSingle() * 2 - 1);
             Biases.ForEachInplace((f) => NetworkUtils.GenerateRandom.NextSingle() * 2 - 1);
@@ -66,15 +64,6 @@ namespace NeuralNetworkButGood
             WorkingVector = (WorkingVector * Weights).Sum(1) + Biases;
             WorkingVector.ForEachInplace(ActivationFunction);
             return WorkingVector;
-        }
-
-        public Tensor<float> BackProp(Tensor<float> grad)
-        {
-            Tensor<float> activationDerivative = Weights.ForEach(Activations.SigmoidDir);
-
-            Tensor<float> layerGradient = grad * activationDerivative;
-
-            return Weights * layerGradient;
         }
     }
 
@@ -108,16 +97,14 @@ namespace NeuralNetworkButGood
         public TensorShape LayerSize => _layerSize;
         private readonly TensorShape _layerSize;
 
-        public Tensor<float> Weights => _weights;
-        private Tensor<float> _weights;
+        public Tensor<float> Weights { get; set; }
 
-        public Tensor<float> Biases => _biases;
-        private Tensor<float> _biases;
+        public Tensor<float> Biases { get; set; }
 
         public SoftMaxFullConnected(int previousLayerSize, int layerSize)
         {
-            this._weights = Tensor.Zeros<float>(new TensorShape(layerSize, previousLayerSize));
-            this._biases = Tensor.Zeros<float>(new TensorShape(layerSize));
+            Weights = Tensor.Zeros<float>(new TensorShape(layerSize, previousLayerSize));
+            Biases = Tensor.Zeros<float>(new TensorShape(layerSize));
 
             Weights.ForEachInplace((f) => NetworkUtils.GenerateRandom.NextSingle() * 2 - 1);
             Biases.ForEachInplace((f) => NetworkUtils.GenerateRandom.NextSingle() * 2 - 1);
@@ -127,7 +114,7 @@ namespace NeuralNetworkButGood
 
         public Tensor<float> FeedForward(Tensor<float> WorkingVector)
         {
-            WorkingVector = ((WorkingVector * _weights).Sum(1) + _biases);
+            WorkingVector = ((WorkingVector * Weights).Sum(1) + Biases);
 
             WorkingVector.ForEachInplace((f) =>
             {
